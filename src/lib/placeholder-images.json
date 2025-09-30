@@ -1,0 +1,34 @@
+{
+  "placeholderImages": [
+    {
+      "id": "course-1",
+      "description": "A computer screen with code on it.",
+      "imageUrl": "https://images.unsplash.com/photo-1753998943619-b9cd910887e5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y29kZSUyMGVkaXRvcnxlbnwwfHx8fDE3NTkxNTE5NDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "code editor"
+    },
+    {
+      "id": "course-2",
+      "description": "Abstract network of nodes and connections.",
+      "imageUrl": "https://images.unsplash.com/photo-1644325349124-d1756b79dd42?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxkYXRhJTIwbmV0d29ya3xlbnwwfHx8fDE3NTkxODczNzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "data network"
+    },
+    {
+      "id": "course-3",
+      "description": "A whiteboard with algorithm flowcharts.",
+      "imageUrl": "https://images.unsplash.com/photo-1658948653839-107f9cd600cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhbGdvcml0aG0lMjBmbG93Y2hhcnR8ZW58MHx8fHwxNzU5MjMzNzQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "algorithm flowchart"
+    },
+    {
+      "id": "course-4",
+      "description": "A book on a desk with a laptop.",
+      "imageUrl": "https://images.unsplash.com/photo-1632976032753-2b209dd0a921?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxib29rJTIwbGFwdG9wfGVufDB8fHx8MTc1OTIzMzc0Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "book laptop"
+    },
+    {
+      "id": "user-avatar",
+      "description": "A placeholder for a user's avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTkyMDk1OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    }
+  ]
+}
