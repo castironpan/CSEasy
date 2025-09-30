@@ -1,0 +1,66 @@
+import type { Course } from '@/lib/types';
+import Link from 'next/link';
+import {
+  Card,
+  CardContent,
+} from '@/components/ui/card';
+
+interface CourseCardProps {
+  course: Course;
+}
+
+export function CourseCard({ course }: CourseCardProps) {
+  return (
+    <Card
+      data-slot="card"
+      className="text-card-foreground flex flex-col gap-6 rounded-xl border bg-[#1a1d24] border-[#2a2d35] p-6"
+    >
+      <CardContent data-slot="card-content" className="p-0">
+        <div className="flex items-start justify-between mb-4">
+          <div
+            className="w-10 h-10 rounded flex items-center justify-center text-white font-bold text-sm"
+            style={{ backgroundColor: course.color }}
+          >
+            {course.initials}
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-white">{course.grade}%</div>
+            <div className="text-xs text-gray-400">Current Grade</div>
+          </div>
+        </div>
+        <div className="mb-4">
+          <h3 className="font-semibold text-white">{course.code}</h3>
+          <p className="text-sm text-gray-400">{course.name}</p>
+        </div>
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs text-gray-400">Course Progress</span>
+            <span className="text-xs text-gray-400">{course.progress}%</span>
+          </div>
+          <div className="w-full bg-[#0f1117] rounded-full h-1">
+            <div
+              className="h-1 rounded-full transition-all duration-300"
+              style={{
+                width: `${course.progress}%`,
+                backgroundColor: course.color,
+              }}
+            ></div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-gray-400">
+            {course.weeks} of {course.totalWeeks} weeks
+          </span>
+          <Link href={course.websiteUrl}>
+            <button
+              className="text-xs font-medium hover:underline"
+              style={{ color: course.color }}
+            >
+              View Details
+            </button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
