@@ -14,6 +14,15 @@ export interface Course {
   labs?: Lab[];
   assignments?: Assignment[];
   announcements?: Announcement[];
+  /**
+   * Syllabus-level totals for normalization. These can exceed the currently released items in
+   * labs/assignments arrays (e.g. future work not yet unlocked). If omitted, fallback logic
+   * should derive counts from the array lengths. `totalExams` is provided for future extension
+   * (e.g. midterms/finals) even if no exam entities are modeled yet.
+   */
+  totalLabs?: number;
+  totalAssignments?: number;
+  totalExams?: number;
 }
 
 // Generic task metadata derived from labs/assignments (no per-student flags inside Lab/Assignment)

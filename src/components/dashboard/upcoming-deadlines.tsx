@@ -33,6 +33,7 @@ export function UpcomingDeadlines({
     setTasks(initialTasks);
   }, [initialTasks]);
 
+
   const [optimisticTasks, setOptimisticTasks] = useOptimistic<
     OptimisticTask[],
     { taskId: string; completed: boolean }
@@ -46,6 +47,17 @@ export function UpcomingDeadlines({
       )
   );
   let [, startTransition] = useTransition();
+
+  // Listen for global task toggle events dispatched from other components (e.g., course page)
+  useEffect(() => {
+    function onTaskToggled(e: Event) {
+      const detail = (e as CustomEvent).detail as { taskId: string; completed: boolean } | undefined;
+      if (!detail) return;
+      setOptimisticTasks({ taskId: detail.taskId, completed: detail.completed });
+    }
+    window.addEventListener('cseasy-task-toggled', onTaskToggled as EventListener);
+    return () => window.removeEventListener('cseasy-task-toggled', onTaskToggled as EventListener);
+  }, [setOptimisticTasks]);
 
   const getCourseCode = (courseId: string) =>
     courses.find((c) => c.id === courseId)?.code || 'N/A';
@@ -74,6 +86,8 @@ export function UpcomingDeadlines({
     startTransition(async () => {
       setOptimisticTasks({ taskId: task.id, completed: checked });
       await toggleTaskCompletion(task.id, studentId);
+      // Broadcast to other live components
+      window.dispatchEvent(new CustomEvent('cseasy-task-toggled', { detail: { taskId: task.id, completed: checked } }));
     });
   }
 

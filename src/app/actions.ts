@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { setStudentIdCookie, deleteStudentIdCookie } from '@/lib/session';
-import { getStudent, toggleStudentTask as toggleTaskData, addTodo as addTodoData, toggleTodo as toggleTodoData } from '@/lib/data';
+import { getStudent, toggleStudentTask as toggleTaskData, addTodo as addTodoData, toggleTodo as toggleTodoData, getCourseIdForTask } from '@/lib/data';
 import {
   suggestTasks,
   SuggestTasksOutput,
@@ -36,7 +36,12 @@ export async function logout() {
 
 export async function toggleTaskCompletion(taskId: string, studentId: string) {
   await toggleTaskData(taskId, studentId);
-  revalidatePath('/');
+  // Revalidate dashboard (layout) so initial server-provided props refresh
+  revalidatePath('/', 'layout');
+  const courseId = getCourseIdForTask(taskId);
+  if (courseId) {
+    revalidatePath(`/courses/${courseId}`);
+  }
 }
 
 export async function addTodo(text: string, studentId: string) {

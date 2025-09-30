@@ -16,11 +16,14 @@ const courseCatalog: Course[] = [
     instructor: 'Dr. Alan Turing',
     websiteUrl: '#',
     grade: 85,
-    progress: 72,
+    progress: 0, // will be derived
     weeks: 7,
     totalWeeks: 10,
     color: 'rgb(155, 89, 182)',
     initials: 'CS',
+    totalLabs: 8,
+    totalAssignments: 6,
+    totalExams: 2,
     labs: [
       { id: 'lab-cs101-1', title: 'Lab 1: Variables & IO', dueDate: futureDays(2) },
       { id: 'lab-cs101-2', title: 'Lab 2: Conditionals', dueDate: futureDays(6) },
@@ -40,11 +43,14 @@ const courseCatalog: Course[] = [
     instructor: 'Dr. Ada Lovelace',
     websiteUrl: '#',
     grade: 91,
-    progress: 80,
+    progress: 0,
     weeks: 8,
     totalWeeks: 10,
     color: 'rgb(26, 188, 156)',
     initials: 'DS',
+    totalLabs: 10,
+    totalAssignments: 8,
+    totalExams: 2,
     labs: [
       { id: 'lab-ds202-1', title: 'Lab 1: Arrays & Lists', dueDate: futureDays(3) },
       { id: 'lab-ds202-2', title: 'Lab 2: Linked Lists', dueDate: futureDays(7) },
@@ -64,11 +70,14 @@ const courseCatalog: Course[] = [
     instructor: 'Dr. Linus Torvalds',
     websiteUrl: '#',
     grade: 78,
-    progress: 60,
+    progress: 0,
     weeks: 6,
     totalWeeks: 10,
     color: 'rgb(241, 196, 15)',
     initials: 'OS',
+    totalLabs: 9,
+    totalAssignments: 7,
+    totalExams: 2,
     labs: [
       { id: 'lab-os301-1', title: 'Lab 1: Processes', dueDate: futureDays(1) },
       { id: 'lab-os301-2', title: 'Lab 2: Shell Scripting', dueDate: pastDays(1) },
@@ -168,6 +177,35 @@ function deriveStudentTasks(stu: Student): StudentTask[] {
   }));
 }
 
+export function getCourseIdForTask(taskId: string): string | undefined {
+  for (const course of courseCatalog) {
+    if (course.labs?.some(l => l.id === taskId) || course.assignments?.some(a => a.id === taskId)) {
+      return course.id;
+    }
+  }
+  return undefined;
+}
+
+export function getCourseTotalTasks(course: Course): number {
+  return (course.totalAssignments || 0) + (course.totalLabs || 0);
+}
+
+export function computeCourseProgressForStudent(course: Course, stuId: string): number {
+  // Use totals if provided; otherwise fall back to currently released items.
+  const releasedLabCount = course.labs?.length || 0;
+  const releasedAssignmentCount = course.assignments?.length || 0;
+  const totalLabs = course.totalLabs ?? releasedLabCount;
+  const totalAssignments = course.totalAssignments ?? releasedAssignmentCount;
+  // Currently we don't model exams as tasks; they could be added similarly.
+  const totalUnits = totalLabs + totalAssignments;
+  if (totalUnits === 0) return 0;
+  const completed = Object.entries(__internalStudents[stuId].taskStates).filter(([taskId, state]) => state.completed && (
+    course.labs?.some(l => l.id === taskId) || course.assignments?.some(a => a.id === taskId)
+  )).length;
+  const progress = Math.round((completed / totalUnits) * 100);
+  return progress;
+}
+
 /******************** Public API (Data Fetching) ********************/
 
 export const getStudent = async (studentId?: string): Promise<Student> => {
@@ -181,8 +219,27 @@ export const getStudentCourses = async (studentId?: string): Promise<StudentCour
   return stu.enrolledCourseIds.map(cid => {
     const course = courseCatalog.find(c => c.id === cid);
     if (!course) throw new Error(`Missing course ${cid}`);
-    return { ...course, labs: course.labs || [], assignments: course.assignments || [] };
+    const dynamicProgress = computeCourseProgressForStudent(course, id);
+    return { ...course, progress: dynamicProgress, labs: course.labs || [], assignments: course.assignments || [] };
   });
+};
+
+export const getStudentCourseDetail = async (courseId: string, studentId?: string): Promise<{
+  course: StudentCourseView;
+  tasks: StudentTask[];
+}> => {
+  const id = resolveStudentId(studentId);
+  const stu = __internalStudents[id];
+  if (!stu.enrolledCourseIds.includes(courseId)) {
+    throw new Error('Course not enrolled');
+  }
+  const course = courseCatalog.find(c => c.id === courseId);
+  if (!course) throw new Error('Course not found');
+  const courseView: StudentCourseView = { ...course, labs: course.labs || [], assignments: course.assignments || [] };
+  // augment with current progress
+  (courseView as any).progress = computeCourseProgressForStudent(course, id);
+  const allTasks = deriveStudentTasks(stu).filter(t => t.courseId === courseId);
+  return { course: courseView, tasks: allTasks };
 };
 
 export const getStudentTaskMetadata = async (studentId?: string): Promise<TaskMetadata[]> => {
