@@ -10,6 +10,7 @@ export interface Course {
   totalWeeks: number;
   color: string;
   initials: string;
+  image?: { id: string; url: string; hint: string }; // optional to preserve older components
   labs?: Lab[];
   assignments?: Assignment[];
   announcements?: Announcement[];

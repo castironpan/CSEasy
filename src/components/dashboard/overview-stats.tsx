@@ -1,4 +1,4 @@
-import type { Task, Course } from '@/lib/types';
+import type { StudentTask, StudentCourseView } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -9,8 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { ClipboardCheck, BookOpen, Clock } from 'lucide-react';
 
 interface OverviewStatsProps {
-  tasks: Task[];
-  courses: Course[];
+  tasks: StudentTask[];
+  courses: StudentCourseView[];
 }
 
 export function OverviewStats({ tasks, courses }: OverviewStatsProps) {
