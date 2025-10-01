@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSEasy Assistant Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 40px auto;
+      max-width: 700px;
+      line-height: 1.5;
+    }
+    h1 { color: #ffb84d; }
+    input, textarea {
+      width: 100%;
+      background: #222;
+      color: #eee;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 6px;
+    }
+    button {
+      margin-top: 10px;
+      background: #ffb84d;
+      border: none;
+      color: #111;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { background: #ffc866; }
+    pre {
+      background: #1a1a1a;
+      padding: 12px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>CSEasy Assistant (Local Test)</h1>
+  <label for="uid">zID</label>
+  <input id="uid" placeholder="e.g. z5570559" value="z5570559">
+
+  <label for="msg">Your message</label>
+  <textarea id="msg" rows="3" placeholder="Type something like 'I have 2 hours today, what should I do?'"></textarea>
+
+  <button id="send">Send</button>
+
+  <pre id="out">Responses will appear here...</pre>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    $('send').onclick = async () => {
+      const body = {
+        userId: $('uid').value || undefined,
+        message: $('msg').value
+      };
+
+      $('out').textContent = "Thinking...";
+
+      try {
+        const res = await fetch('http://localhost:3000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        $('out').textContent = data.reply || JSON.stringify(data, null, 2);
+      } catch (err) {
+        $('out').textContent = "❌ Error: " + err.message;
+      }
+    };
+  </script>
+</body>
+</html>
