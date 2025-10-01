@@ -4,141 +4,126 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import OpenAI from "openai";
 import url from "url";
+import OpenAI from "openai";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ---- OpenAI ----
+// ---- OpenAI setup ----
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const MODEL = process.env.MODEL || "gpt-4o-mini";
+
+// SDK message type alias (prevents the 'name is required' / union widening issues)
+type ChatMsg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
+
+// Your own turn type for lightweight memory
+type ChatTurn = { role: "user" | "assistant"; content: string };
 
 // ---- Load KB ----
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const KB_PATH = path.join(here, "knowledge-base", "KB.md");
+
 let KB_TEXT = "";
 try {
   KB_TEXT = fs.readFileSync(KB_PATH, "utf8");
   console.log(`[ai] Loaded KB: ${KB_PATH} (${KB_TEXT.length} chars)`);
-} catch (e) {
+} catch {
   console.error(`[ai] Could not read KB at ${KB_PATH}`);
   process.exit(1);
 }
 
-// ---- Per-user scoped context ----
-// Returns: student's block + only the course sections they are enrolled in (from the global block)
+// ---- Per-user memory (typed) ----
+const memory = new Map<string, ChatTurn[]>();
+const MAX_TURNS = 10;
+
+// Optional: scope the KB to a specific user block
 function getContextForUser(userId?: string) {
   if (!userId) return KB_TEXT;
-
-  // Student block
-  const studentRe = new RegExp(
-    `<!--\\s*USER:${userId}\\s*-->[\\s\\S]*?(?=<!--\\s*USER:|$)`,
-    "i"
-  );
-  const student = (KB_TEXT.match(studentRe)?.[0] || "").trim();
-  if (!student) return KB_TEXT;
-
-  // Enrolled course codes from student block
-  const enrolledLine =
-    student.match(/Enrolled Courses:\s*([A-Z]{4}\d{4}(?:\s*,\s*[A-Z]{4}\d{4})*)/i)?.[1] || "";
-  const codes = enrolledLine.split(/\s*,\s*/).filter(Boolean);
-
-  // Global block (shared course info)
-  const global =
-    (KB_TEXT.match(/<!--\s*USER:global\s*-->[\s\S]*?(?=<!--\s*USER:|$)/i)?.[0] || "").trim();
-
-  // Pull only those course sections
-  const selectedCourses: string[] = [];
-  for (const code of codes) {
-    const courseRe = new RegExp(
-      `##\\s*Course:\\s*${code}[\\s\\S]*?(?=\\n##\\s*Course:|\\n<!--\\s*USER:|$)`,
-      "i"
-    );
-    const sec = global.match(courseRe)?.[0];
-    if (sec) selectedCourses.push(sec.trim());
-  }
-
-  return [
-    `# Student Context\n${student}`,
-    `# Relevant Courses\n${selectedCourses.join("\n\n")}`,
-  ].join("\n\n");
+  const re = new RegExp(`<!--\\s*USER:${userId}\\s*-->[\\s\\S]*?(?=<!--\\s*USER:|$)`, "i");
+  const m = KB_TEXT.match(re);
+  return m ? m[0] : KB_TEXT;
 }
 
-// ---- Personality & boundaries ----
-const SYSTEM_PROMPT = [
-  "You are CSEasy Assistant — a friendly, down-to-earth study coach for UNSW CSE students.",
-  "Base answers only on the provided context (student block + their enrolled courses).",
-  "Mission: estimate roughly how long released tasks will take and suggest what to focus on next to make the best progress with the time they have.",
-  "Be conversational, encouraging, and specific. Do not start with a greeting unless the user greets first.",
-  "Boundaries: never generate solutions or code for labs/assignments/quizzes; if something is outside your ability, explain that kindly and suggest next steps.",
-].join(" ");
+// ---- System prompt (decisive + friendly, no solutions) ----
+const SYSTEM_PROMPT = `
+You are CSEasy Assistant — a warm, chatty, but efficient study buddy for UNSW CSE students.
 
-// ---- Lightweight conversation memory (per userId) ----
-type ChatTurn = { role: "user" | "assistant"; content: string };
-const userMemory = new Map<string, ChatTurn[]>();
-const MAX_MEMORY = 6; // keep last 6 turns per user
+Be human and natural. Use short, friendly sentences. Avoid corporate tone.
+
+Decisive planning rules (in order):
+1) Urgency first: nearest due dates win. Only consider RELEASED items.
+2) Impact: higher weight (%) matters more.
+3) Momentum: if something is In Progress, prefer finishing it unless a different item is due sooner.
+4) If the student gives available hours, allocate them precisely (e.g., 70 min + 50 min). Otherwise assume ~2–3h once.
+5) Make ONE clear primary recommendation and optionally ONE backup. No either/or.
+
+Boundaries:
+- Never provide coursework answers or code.
+- If something is unknown, say so casually and suggest what to check.
+
+Tone:
+- Friendly, confident, brief. Start directly (no greeting unless the user greets first).
+`;
 
 // ---- Chat endpoint ----
 app.post("/chat", async (req, res) => {
   try {
-    const { message, userId } = req.body || {};
+    const { message, userId } = (req.body ?? {}) as { message: string; userId?: string };
     if (!message) return res.status(400).json({ error: "Missing 'message'." });
 
-    // Reset memory if asked
-    if (String(message).trim().toLowerCase() === "reset") {
-      if (userId) userMemory.delete(userId);
-      return res.json({ reply: "Conversation reset 👍" });
-    }
+    const uid = userId ?? "global";
+    const context = getContextForUser(uid);
+    const contextSlice = context.length > 12_000 ? context.slice(0, 12_000) : context;
 
-    // Scoped context
-    const context = getContextForUser(userId);
+    // Pull prior turns with a TYPED fallback so TS keeps literal roles
+    const prior: ChatTurn[] = memory.get(uid) ?? ([] as ChatTurn[]);
 
-    // (Tiny safety) If KB is huge, send only first ~12k chars
-    const MAX_CONTEXT = 12_000;
-    const contextSlice = context.length > MAX_CONTEXT ? context.slice(0, MAX_CONTEXT) : context;
+    // Adapt your ChatTurn[] to the SDK's ChatMsg[]
+    const priorMsgs: ChatMsg[] = prior.map((t) => ({ role: t.role, content: t.content }));
 
-    // Load memory
-    const memory = userMemory.get(userId) || [];
-
-    // Build conversation
     const todayISO = new Date().toISOString();
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+
+    const messages: ChatMsg[] = [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Today: ${todayISO}\n\nContext:\n${contextSlice}` },
-      ...memory,
       {
         role: "user",
         content:
-          `${message}\n\n` +
-          `Notes for assistant: it's okay to infer and be chatty; avoid greetings unless user greets first; ` +
-          `if hours aren't stated, you may assume ~3h and say so gently; never produce coursework solutions.`,
+          `Today: ${todayISO}\n` +
+          `Student/course context:\n${contextSlice}\n\n` +
+          `User message:\n${message}\n\n` +
+          `Notes for assistant:\n- Be decisive (ONE main pick, optional ONE backup).\n` +
+          `- Allocate time precisely based on hours stated.\n` +
+          `- Keep it short and friendly; no coursework solutions.\n`,
       },
+      ...priorMsgs,
     ];
 
-    // Model call
     const resp = await openai.chat.completions.create({
       model: MODEL,
-      temperature: 0.65,
+      temperature: 0.55,
       top_p: 0.9,
       presence_penalty: 0.2,
-      messages,
+      messages, // typed as ChatMsg[]
     });
 
-    let reply = resp.choices?.[0]?.message?.content?.trim() || "";
+    let reply = resp.choices?.[0]?.message?.content?.trim() || "Not sure yet.";
+    reply = reply.replace(/^(hi|hey|hello)[,!\s-]*/i, ""); // trim generic greetings if any
 
-    // (Optional) strip leading generic salutations
-    reply = reply.replace(/^(?:hi|hey|hello)[^.\n]*[.\n]+\s*/i, "").trim();
+    // Update memory with literal roles (as const to keep the union)
+    const updated: ChatTurn[] = [
+      ...prior,
+      { role: "user" as const, content: String(message) },
+      { role: "assistant" as const, content: reply },
+    ].slice(-MAX_TURNS);
 
-    // Update memory
-    const updated = [...memory, { role: "user", content: message }, { role: "assistant", content: reply }].slice(-MAX_MEMORY);
-    if (userId) userMemory.set(userId, updated);
+    memory.set(uid, updated);
 
-    return res.json({ reply });
+    res.json({ reply });
   } catch (err) {
     console.error("[/chat] error:", err);
-    return res.status(500).json({ error: "Chat failed." });
+    res.status(500).json({ error: "Chat failed." });
   }
 });
 
