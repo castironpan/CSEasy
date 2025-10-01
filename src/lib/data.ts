@@ -12,8 +12,8 @@ const courseCatalog: Course[] = [
   {
     id: 'cs101',
     name: 'Introduction to Programming',
-    code: 'CS 101',
-    instructor: 'Dr. Alan Turing',
+    code: 'COMP1511',
+    instructor: 'Jake Renzella',
     websiteUrl: '#',
     grade: 85,
     progress: 0, // will be derived
@@ -25,12 +25,12 @@ const courseCatalog: Course[] = [
     totalAssignments: 6,
     totalExams: 2,
     labs: [
-      { id: 'lab-cs101-1', title: 'Lab 1: Variables & IO', dueDate: futureDays(2) },
-      { id: 'lab-cs101-2', title: 'Lab 2: Conditionals', dueDate: futureDays(6) },
+      { id: 'lab-cs101-1', title: 'Lab 1: Setup', dueDate: futureDays(2) },
+      { id: 'lab-cs101-2', title: 'Lab 2: Introduction To C', dueDate: futureDays(6) },
     ],
     assignments: [
-      { id: 'assg-cs101-1', title: 'Assignment 1: Basic Python Functions', dueDate: futureDays(4) },
-      { id: 'assg-cs101-2', title: 'Assignment 2: Loops', dueDate: futureDays(11) },
+      { id: 'assg-cs101-1', title: 'Assignment 1: CS Ninja', dueDate: futureDays(4) },
+      { id: 'assg-cs101-2', title: 'Assignment 2: CS Eats', dueDate: futureDays(11) },
     ],
     announcements: [
       { id: 'ann-cs101-1', courseId: 'cs101', title: 'Guest Lecture', content: 'AI Ethics talk next week.', date: pastDays(1) },
@@ -39,8 +39,8 @@ const courseCatalog: Course[] = [
   {
     id: 'ds202',
     name: 'Data Structures & Algorithms',
-    code: 'DS 202',
-    instructor: 'Dr. Ada Lovelace',
+    code: 'COMP2521',
+    instructor: 'Sim Mautner',
     websiteUrl: '#',
     grade: 91,
     progress: 0,
@@ -65,9 +65,9 @@ const courseCatalog: Course[] = [
   },
   {
     id: 'os301',
-    name: 'Operating Systems',
-    code: 'OS 301',
-    instructor: 'Dr. Linus Torvalds',
+    name: 'Software Engineering Fundamentals',
+    code: 'COMP1531',
+    instructor: 'Yuchao Jiang',
     websiteUrl: '#',
     grade: 78,
     progress: 0,
@@ -79,8 +79,8 @@ const courseCatalog: Course[] = [
     totalAssignments: 7,
     totalExams: 2,
     labs: [
-      { id: 'lab-os301-1', title: 'Lab 1: Processes', dueDate: futureDays(1) },
-      { id: 'lab-os301-2', title: 'Lab 2: Shell Scripting', dueDate: pastDays(1) },
+      { id: 'lab-os301-1', title: 'Lab 1: Using Typescript', dueDate: futureDays(1) },
+      { id: 'lab-os301-2', title: 'Lab 2: Introduction To JS', dueDate: pastDays(1) },
     ],
     assignments: [
       { id: 'assg-os301-1', title: 'Assignment 1: Scheduling', dueDate: futureDays(9) },
