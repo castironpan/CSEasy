@@ -15,11 +15,8 @@ app.use(express.json());
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const MODEL = process.env.MODEL || "gpt-4o-mini";
 
-// SDK message type alias (prevents the 'name is required' / union widening issues)
+// SDK message type alias (prevents union widening / 'name' errors)
 type ChatMsg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
-
-// Your own turn type for lightweight memory
-type ChatTurn = { role: "user" | "assistant"; content: string };
 
 // ---- Load KB ----
 const here = path.dirname(url.fileURLToPath(import.meta.url));
@@ -34,8 +31,8 @@ try {
   process.exit(1);
 }
 
-// ---- Per-user memory (typed) ----
-const memory = new Map<string, ChatTurn[]>();
+// ---- Per-user memory (store as ChatMsg[] directly) ----
+const memory = new Map<string, ChatMsg[]>();
 const MAX_TURNS = 10;
 
 // Optional: scope the KB to a specific user block
@@ -67,6 +64,18 @@ Tone:
 - Friendly, confident, brief. Start directly (no greeting unless the user greets first).
 `;
 
+// ---- Health/debug helpers (optional) ----
+app.get("/health", (_req, res) => res.json({ ok: true }));
+app.post("/reset", (req, res) => {
+  const uid = (req.body?.userId as string) ?? "global";
+  memory.delete(uid);
+  res.json({ ok: true, cleared: uid });
+});
+app.get("/history", (req, res) => {
+  const uid = (req.query.userId as string) ?? "global";
+  res.json({ userId: uid, history: memory.get(uid) ?? [] });
+});
+
 // ---- Chat endpoint ----
 app.post("/chat", async (req, res) => {
   try {
@@ -77,27 +86,17 @@ app.post("/chat", async (req, res) => {
     const context = getContextForUser(uid);
     const contextSlice = context.length > 12_000 ? context.slice(0, 12_000) : context;
 
-    // Pull prior turns with a TYPED fallback so TS keeps literal roles
-    const prior: ChatTurn[] = memory.get(uid) ?? ([] as ChatTurn[]);
-
-    // Adapt your ChatTurn[] to the SDK's ChatMsg[]
-    const priorMsgs: ChatMsg[] = prior.map((t) => ({ role: t.role, content: t.content }));
+    // Pull prior turns (typed fallback to prevent widening)
+    const prior: ChatMsg[] = memory.get(uid) ?? ([] as ChatMsg[]);
 
     const todayISO = new Date().toISOString();
 
+    // Order: system → context(system) → prior history → CURRENT user
     const messages: ChatMsg[] = [
       { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content:
-          `Today: ${todayISO}\n` +
-          `Student/course context:\n${contextSlice}\n\n` +
-          `User message:\n${message}\n\n` +
-          `Notes for assistant:\n- Be decisive (ONE main pick, optional ONE backup).\n` +
-          `- Allocate time precisely based on hours stated.\n` +
-          `- Keep it short and friendly; no coursework solutions.\n`,
-      },
-      ...priorMsgs,
+      { role: "system", content: `Today: ${todayISO}\nStudent/course context:\n${contextSlice}` },
+      ...prior,
+      { role: "user", content: String(message) } as ChatMsg, // <- cast fixes union
     ];
 
     const resp = await openai.chat.completions.create({
@@ -109,13 +108,13 @@ app.post("/chat", async (req, res) => {
     });
 
     let reply = resp.choices?.[0]?.message?.content?.trim() || "Not sure yet.";
-    reply = reply.replace(/^(hi|hey|hello)[,!\s-]*/i, ""); // trim generic greetings if any
+    reply = reply.replace(/^(hi|hey|hello)[,!\s-]*/i, ""); // trim generic greetings
 
-    // Update memory with literal roles (as const to keep the union)
-    const updated: ChatTurn[] = [
+    // Update memory: append user + assistant; keep last N
+    const updated: ChatMsg[] = [
       ...prior,
-      { role: "user" as const, content: String(message) },
-      { role: "assistant" as const, content: reply },
+      { role: "user", content: String(message) } as ChatMsg,       // <- cast fixes union
+      { role: "assistant", content: reply } as ChatMsg,            // <- cast fixes union
     ].slice(-MAX_TURNS);
 
     memory.set(uid, updated);
