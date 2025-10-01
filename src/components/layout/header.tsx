@@ -15,9 +15,23 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
+import type { Student } from '@/lib/types';
+import { useTransition } from 'react';
+import { logout } from '@/app/actions';
 
-export function AppHeader() {
+interface AppHeaderProps {
+  student: Student;
+}
+
+export function AppHeader({ student }: AppHeaderProps) {
   const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
+  const [isPending, startTransition] = useTransition();
+
+  const handleLogout = () => {
+    startTransition(async () => {
+      await logout();
+    });
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
@@ -40,7 +54,7 @@ export function AppHeader() {
                   />
                 )}
                 <AvatarFallback>
-                  <User />
+                  {student.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -48,9 +62,9 @@ export function AppHeader() {
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Student User</p>
+                <p className="text-sm font-medium leading-none">{student.name}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  student@university.edu
+                  {student.id}@university.edu
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -60,9 +74,9 @@ export function AppHeader() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} disabled={isPending}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>{isPending ? 'Logging out...' : 'Log out'}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

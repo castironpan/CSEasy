@@ -23,14 +23,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { getAiTaskSuggestions, getAiTimeEstimate } from '@/app/actions';
+import { getAiTaskSuggestions, getAiTimeEstimate, addTodo as addTodoAction, toggleTodo as toggleTodoAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface AITodoListProps {
   initialTodos: Todo[];
+  studentId: string;
 }
 
-export function AITodoList({ initialTodos }: AITodoListProps) {
+export function AITodoList({ initialTodos, studentId }: AITodoListProps) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [newTodo, setNewTodo] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
@@ -49,22 +50,19 @@ export function AITodoList({ initialTodos }: AITodoListProps) {
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
-    const newTodoItem: Todo = {
-      id: `todo-${Date.now()}`,
-      text: newTodo.trim(),
-      completed: false,
-    };
-    startTransition(() => {
-      setTodos((prev) => [...prev, newTodoItem]);
-      setNewTodo('');
+    startTransition(async () => {
+      const created = await addTodoAction(newTodo.trim(), studentId);
+      if (created) {
+        setTodos(prev => [...prev, created]);
+        setNewTodo('');
+      }
     });
   };
 
   const handleToggleTodo = (id: string, completed: boolean) => {
-     startTransition(() => {
-      setTodos((prev) =>
-        prev.map((todo) => (todo.id === id ? { ...todo, completed } : todo))
-      );
+     startTransition(async () => {
+      setTodos(prev => prev.map(todo => todo.id === id ? { ...todo, completed } : todo));
+      await toggleTodoAction(id, studentId);
     });
   };
 
@@ -105,15 +103,15 @@ export function AITodoList({ initialTodos }: AITodoListProps) {
   };
 
   const addSuggestionToTodos = (suggestion: string) => {
-    const newTodoItem: Todo = {
-      id: `todo-${Date.now()}`,
-      text: suggestion,
-      completed: false,
-    };
-    setTodos(prev => [...prev, newTodoItem]);
-    setSuggestions(prev => prev.filter(s => s !== suggestion));
-    toast({ title: "Task added!", description: `"${suggestion}" was added to your list.`})
-  }
+    startTransition(async () => {
+      const created = await addTodoAction(suggestion, studentId);
+      if (created) {
+        setTodos(prev => [...prev, created]);
+        setSuggestions(prev => prev.filter(s => s !== suggestion));
+        toast({ title: 'Task added!', description: `"${suggestion}" was added to your list.` });
+      }
+    });
+  };
 
   return (
     <>

@@ -1,7 +1,12 @@
-import type { Course, Task, Announcement, Todo, Student, Lab, Assignment, StudentCourseView, TaskMetadata, StudentTask, StudentTaskState } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import type { Course, Announcement, Todo, Student, StudentCourseView, TaskMetadata, StudentTask, StudentTaskState } from '@/lib/types';
+
+/******************** Utility Date Helpers ********************/
+function futureDays(n: number) { return new Date(Date.now() + n * 86400000).toISOString(); }
+function pastDays(n: number) { return new Date(Date.now() - n * 86400000).toISOString(); }
+
 
 /******************** Local In-Memory Data Model (Refactored) ********************/
+
 // Courses now have Labs / Assignments WITHOUT completion flags (pure metadata)
 const courseCatalog: Course[] = [
   {
@@ -11,11 +16,14 @@ const courseCatalog: Course[] = [
     instructor: 'Dr. Alan Turing',
     websiteUrl: '#',
     grade: 85,
-    progress: 72,
+    progress: 0, // will be derived
     weeks: 7,
     totalWeeks: 10,
     color: 'rgb(155, 89, 182)',
     initials: 'CS',
+    totalLabs: 8,
+    totalAssignments: 6,
+    totalExams: 2,
     labs: [
       { id: 'lab-cs101-1', title: 'Lab 1: Variables & IO', dueDate: futureDays(2) },
       { id: 'lab-cs101-2', title: 'Lab 2: Conditionals', dueDate: futureDays(6) },
@@ -35,11 +43,14 @@ const courseCatalog: Course[] = [
     instructor: 'Dr. Ada Lovelace',
     websiteUrl: '#',
     grade: 91,
-    progress: 80,
+    progress: 0,
     weeks: 8,
     totalWeeks: 10,
     color: 'rgb(26, 188, 156)',
     initials: 'DS',
+    totalLabs: 10,
+    totalAssignments: 8,
+    totalExams: 2,
     labs: [
       { id: 'lab-ds202-1', title: 'Lab 1: Arrays & Lists', dueDate: futureDays(3) },
       { id: 'lab-ds202-2', title: 'Lab 2: Linked Lists', dueDate: futureDays(7) },
@@ -59,11 +70,14 @@ const courseCatalog: Course[] = [
     instructor: 'Dr. Linus Torvalds',
     websiteUrl: '#',
     grade: 78,
-    progress: 60,
+    progress: 0,
     weeks: 6,
     totalWeeks: 10,
     color: 'rgb(241, 196, 15)',
     initials: 'OS',
+    totalLabs: 9,
+    totalAssignments: 7,
+    totalExams: 2,
     labs: [
       { id: 'lab-os301-1', title: 'Lab 1: Processes', dueDate: futureDays(1) },
       { id: 'lab-os301-2', title: 'Lab 2: Shell Scripting', dueDate: pastDays(1) },
@@ -77,34 +91,71 @@ const courseCatalog: Course[] = [
   },
 ];
 
-// Student with per-task completion state separate from catalog definitions
-let student: Student = {
-  id: 'student-1',
-  name: 'Jane Doe',
-  enrolledCourseIds: ['cs101', 'ds202', 'os301'],
-  todos: [
-    { id: 'todo-1', text: 'Review DS202 lecture', completed: true },
-    { id: 'todo-2', text: 'Start OS301 Scheduling assignment', completed: false },
-    { id: 'todo-3', text: 'Form study group for OS301 final', completed: false },
-  ],
-  taskStates: {
-    'lab-cs101-1': { completed: false },
-    'lab-cs101-2': { completed: false },
-    'assg-cs101-1': { completed: false },
-    'assg-cs101-2': { completed: false },
-    'lab-ds202-1': { completed: false },
-    'lab-ds202-2': { completed: false },
-    'assg-ds202-1': { completed: false },
-    'assg-ds202-2': { completed: false },
-    'lab-os301-1': { completed: true, completedAt: pastDays(1) },
-    'lab-os301-2': { completed: false },
-    'assg-os301-1': { completed: false },
+// In-memory store for all student data.
+// In a real app, this would be a database.
+const __internalStudents: Record<string, Student> = {
+  'student-1': {
+    id: 'student-1',
+    name: 'Jane Doe',
+    enrolledCourseIds: ['cs101', 'ds202', 'os301'],
+    todos: [
+      { id: 'todo-1', text: 'Review DS202 lecture', completed: true },
+      { id: 'todo-2', text: 'Start OS301 Scheduling assignment', completed: false },
+      { id: 'todo-3', text: 'Form study group for OS301 final', completed: false },
+    ],
+    taskStates: {
+      'lab-cs101-1': { completed: false },
+      'lab-cs101-2': { completed: false },
+      'assg-cs101-1': { completed: false },
+      'assg-cs101-2': { completed: false },
+      'lab-ds202-1': { completed: false },
+      'lab-ds202-2': { completed: false },
+      'assg-ds202-1': { completed: false },
+      'assg-ds202-2': { completed: false },
+      'lab-os301-1': { completed: false },
+      'lab-os301-2': { completed: true, completedAt: pastDays(1) },
+      'assg-os301-1': { completed: false },
+    }
+  },
+  'student-2': {
+    id: 'student-2',
+    name: 'John Smith',
+    enrolledCourseIds: ['cs101', 'ds202'],
+    todos: [
+      { id: 'todo-4', text: 'Buy new notebook', completed: true },
+    ],
+    taskStates: {
+      'lab-cs101-1': { completed: true, completedAt: pastDays(2) },
+      'lab-cs101-2': { completed: false },
+      'assg-cs101-1': { completed: true, completedAt: pastDays(1) },
+      'assg-cs101-2': { completed: false },
+      'lab-ds202-1': { completed: false },
+      'lab-ds202-2': { completed: false },
+      'assg-ds202-1': { completed: false },
+      'assg-ds202-2': { completed: false },
+    }
   }
 };
 
-/******************** Utility Date Helpers ********************/
-function futureDays(n: number) { return new Date(Date.now() + n*86400000).toISOString(); }
-function pastDays(n: number) { return new Date(Date.now() - n*86400000).toISOString(); }
+/******************** Internal Helpers ********************/
+
+// In a real app, this would resolve the current user from a session cookie.
+// For now, it's a placeholder that defaults to student-1.
+function resolveStudentId(studentId?: string): string {
+  return studentId || 'student-1';
+}
+
+// A helper to safely mutate student data, ensuring we don't leak references.
+function mutateStudent(studentId: string, mutator: (student: Student) => void) {
+  const student = __internalStudents[studentId];
+  if (!student) {
+    throw new Error(`Student with id "${studentId}" not found.`);
+  }
+  // Create a deep copy to prevent direct mutation of the original object.
+  const studentCopy = structuredClone(student);
+  mutator(studentCopy);
+  __internalStudents[studentId] = studentCopy;
+}
 
 /******************** Task Metadata Aggregation ********************/
 function buildTaskMetadataForStudent(stu: Student): TaskMetadata[] {
@@ -126,64 +177,132 @@ function deriveStudentTasks(stu: Student): StudentTask[] {
   }));
 }
 
-/******************** Public API ********************/
-export const getStudent = async (): Promise<Student> => structuredClone(student);
-export const getStudentCourses = async (): Promise<StudentCourseView[]> => {
-  return student.enrolledCourseIds.map(cid => {
+export function getCourseIdForTask(taskId: string): string | undefined {
+  for (const course of courseCatalog) {
+    if (course.labs?.some(l => l.id === taskId) || course.assignments?.some(a => a.id === taskId)) {
+      return course.id;
+    }
+  }
+  return undefined;
+}
+
+export function getCourseTotalTasks(course: Course): number {
+  return (course.totalAssignments || 0) + (course.totalLabs || 0);
+}
+
+export function computeCourseProgressForStudent(course: Course, stuId: string): number {
+  // Use totals if provided; otherwise fall back to currently released items.
+  const releasedLabCount = course.labs?.length || 0;
+  const releasedAssignmentCount = course.assignments?.length || 0;
+  const totalLabs = course.totalLabs ?? releasedLabCount;
+  const totalAssignments = course.totalAssignments ?? releasedAssignmentCount;
+  // Currently we don't model exams as tasks; they could be added similarly.
+  const totalUnits = totalLabs + totalAssignments;
+  if (totalUnits === 0) return 0;
+  const completed = Object.entries(__internalStudents[stuId].taskStates).filter(([taskId, state]) => state.completed && (
+    course.labs?.some(l => l.id === taskId) || course.assignments?.some(a => a.id === taskId)
+  )).length;
+  const progress = Math.round((completed / totalUnits) * 100);
+  return progress;
+}
+
+/******************** Public API (Data Fetching) ********************/
+
+export const getStudent = async (studentId?: string): Promise<Student> => {
+  const id = resolveStudentId(studentId);
+  return structuredClone(__internalStudents[id]);
+};
+
+export const getStudentCourses = async (studentId?: string): Promise<StudentCourseView[]> => {
+  const id = resolveStudentId(studentId);
+  const stu = __internalStudents[id];
+  return stu.enrolledCourseIds.map(cid => {
     const course = courseCatalog.find(c => c.id === cid);
     if (!course) throw new Error(`Missing course ${cid}`);
-    return { ...course, labs: course.labs || [], assignments: course.assignments || [] };
+    const dynamicProgress = computeCourseProgressForStudent(course, id);
+    return { ...course, progress: dynamicProgress, labs: course.labs || [], assignments: course.assignments || [] };
   });
 };
-export const getStudentTaskMetadata = async (): Promise<TaskMetadata[]> => buildTaskMetadataForStudent(student);
-export const getStudentTasks = async (): Promise<StudentTask[]> => deriveStudentTasks(student);
-export const getStudentAnnouncements = async (): Promise<Announcement[]> => {
+
+export const getStudentCourseDetail = async (courseId: string, studentId?: string): Promise<{
+  course: StudentCourseView;
+  tasks: StudentTask[];
+}> => {
+  const id = resolveStudentId(studentId);
+  const stu = __internalStudents[id];
+  if (!stu.enrolledCourseIds.includes(courseId)) {
+    throw new Error('Course not enrolled');
+  }
+  const course = courseCatalog.find(c => c.id === courseId);
+  if (!course) throw new Error('Course not found');
+  const courseView: StudentCourseView = { ...course, labs: course.labs || [], assignments: course.assignments || [] };
+  // augment with current progress
+  (courseView as any).progress = computeCourseProgressForStudent(course, id);
+  const allTasks = deriveStudentTasks(stu).filter(t => t.courseId === courseId);
+  return { course: courseView, tasks: allTasks };
+};
+
+export const getStudentTaskMetadata = async (studentId?: string): Promise<TaskMetadata[]> => {
+  return buildTaskMetadataForStudent(__internalStudents[resolveStudentId(studentId)]);
+}
+
+export const getStudentTasks = async (studentId?: string): Promise<StudentTask[]> => {
+  return deriveStudentTasks(__internalStudents[resolveStudentId(studentId)]);
+}
+
+export const getStudentAnnouncements = async (studentId?: string): Promise<Announcement[]> => {
+  const stu = __internalStudents[resolveStudentId(studentId)];
   const anns: Announcement[] = [];
-  student.enrolledCourseIds.forEach(cid => {
+  stu.enrolledCourseIds.forEach(cid => {
     const course = courseCatalog.find(c => c.id === cid);
     if (course?.announcements) anns.push(...course.announcements);
   });
-  return anns.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return anns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
-export const getStudentTodos = async (): Promise<Todo[]> => structuredClone(student.todos);
 
-/******************** Mutations ********************/
-export const toggleStudentTask = async (taskId: string) => {
-  const state = student.taskStates[taskId] || { completed: false } as StudentTaskState;
-  state.completed = !state.completed;
-  state.completedAt = state.completed ? new Date().toISOString() : undefined;
-  student.taskStates[taskId] = state;
+export const getStudentTodos = async (studentId?: string): Promise<Todo[]> => {
+  return structuredClone(__internalStudents[resolveStudentId(studentId)].todos);
 };
-export const addTodo = async (text: string) => {
-  const newTodo: Todo = { id: `todo-${crypto.randomUUID()}`, text, completed: false };
-  student.todos.push(newTodo);
-  return newTodo;
+
+export const getAllStudents = async (): Promise<{ id: string; name: string; }[]> => {
+  return Object.values(__internalStudents).map(s => ({ id: s.id, name: s.name }));
 };
-export const toggleTodo = async (todoId: string) => {
-  const td = student.todos.find(t => t.id === todoId);
-  if (td) td.completed = !td.completed;
-};
-export const enrollInCourse = async (courseId: string) => {
-  if (!student.enrolledCourseIds.includes(courseId)) student.enrolledCourseIds.push(courseId);
-};
-export const dropCourse = async (courseId: string) => {
-  student.enrolledCourseIds = student.enrolledCourseIds.filter(id => id !== courseId);
-  // Optionally purge task states for dropped course
-  Object.keys(student.taskStates).forEach(tid => {
-    if (tid.startsWith(`lab-${courseId}`) || tid.startsWith(`assg-${courseId}`)) delete student.taskStates[tid];
+
+/******************** Public API (Mutations) ********************/
+
+export const setStudentTaskCompletion = async (taskId: string, completed: boolean, studentId?: string) => {
+  const id = resolveStudentId(studentId);
+  mutateStudent(id, stu => {
+    const state = stu.taskStates[taskId] || { completed: false } as StudentTaskState;
+    state.completed = completed;
+    state.completedAt = completed ? new Date().toISOString() : undefined;
+    stu.taskStates[taskId] = state;
   });
 };
 
-/******************** Legacy Compatibility Wrappers ********************/
-// Map StudentTask -> legacy Task shape
-export const getTasks = async (): Promise<Task[]> => (await getStudentTasks()).map(st => ({
-  id: st.id,
-  courseId: st.courseId,
-  title: st.title,
-  type: st.sourceType,
-  dueDate: st.dueDate,
-  completed: st.completed,
-}));
-export const getCourses = async (): Promise<Course[]> => getStudentCourses();
-export const getAnnouncements = async (): Promise<Announcement[]> => getStudentAnnouncements();
-export const getTodos = async (): Promise<Todo[]> => getStudentTodos();
+export const toggleStudentTask = async (taskId: string, studentId?: string) => {
+  const id = resolveStudentId(studentId);
+  mutateStudent(id, stu => {
+    const state = stu.taskStates[taskId] || { completed: false } as StudentTaskState;
+    state.completed = !state.completed;
+    state.completedAt = state.completed ? new Date().toISOString() : undefined;
+    stu.taskStates[taskId] = state;
+  });
+};
+
+export const addTodo = async (text: string, studentId?: string) => {
+  const id = resolveStudentId(studentId);
+  const newTodo: Todo = { id: `todo-${crypto.randomUUID()}`, text, completed: false };
+  mutateStudent(id, stu => { stu.todos.push(newTodo); });
+  return newTodo;
+};
+
+export const toggleTodo = async (todoId: string, studentId?: string) => {
+  const id = resolveStudentId(studentId);
+  mutateStudent(id, stu => {
+    const td = stu.todos.find(t => t.id === todoId);
+    if (td) {
+      td.completed = !td.completed;
+    }
+  });
+};

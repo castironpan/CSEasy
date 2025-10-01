@@ -1,5 +1,8 @@
-"use server";
+'use server';
 
+import { revalidatePath } from 'next/cache';
+import { setStudentIdCookie, deleteStudentIdCookie } from '@/lib/session';
+import { getStudent, toggleStudentTask as toggleTaskData, addTodo as addTodoData, toggleTodo as toggleTodoData, getCourseIdForTask } from '@/lib/data';
 import {
   suggestTasks,
   SuggestTasksOutput,
@@ -8,17 +11,48 @@ import {
   estimateTaskCompletionTime,
   EstimateTaskCompletionTimeOutput,
 } from "@/ai/flows/estimate-task-completion-time";
-import { revalidatePath } from "next/cache";
 
-// In a real application, you would update a database here.
-// For this scaffold, we'll just log the action.
-export async function toggleTaskCompletion(taskId: string, completed: boolean) {
-  console.log(`Toggling task ${taskId} to ${completed}`);
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  // After DB update, you might revalidate the path
-  // revalidatePath('/');
-  return { success: true, taskId, completed };
+export async function login(studentId: string): Promise<{ error: string } | null> {
+  try {
+    // Check if student exists
+    const student = await getStudent(studentId);
+    if (!student) {
+      return { error: 'Invalid student ID' };
+    }
+  await setStudentIdCookie(studentId);
+    revalidatePath('/', 'layout'); // Revalidate all pages
+    return null;
+  } catch (e) {
+    const error = e as Error;
+    console.error('Login failed:', error);
+    return { error: error.message || 'An unknown error occurred.' };
+  }
+}
+
+export async function logout() {
+  await deleteStudentIdCookie();
+  revalidatePath('/', 'layout');
+}
+
+export async function toggleTaskCompletion(taskId: string, studentId: string) {
+  await toggleTaskData(taskId, studentId);
+  // Revalidate dashboard (layout) so initial server-provided props refresh
+  revalidatePath('/', 'layout');
+  const courseId = getCourseIdForTask(taskId);
+  if (courseId) {
+    revalidatePath(`/courses/${courseId}`);
+  }
+}
+
+export async function addTodo(text: string, studentId: string) {
+  const newTodo = await addTodoData(text, studentId);
+  revalidatePath('/');
+  return newTodo;
+}
+
+export async function toggleTodo(todoId: string, studentId: string) {
+    await toggleTodoData(todoId, studentId);
+    revalidatePath('/');
 }
 
 export async function getAiTaskSuggestions(
