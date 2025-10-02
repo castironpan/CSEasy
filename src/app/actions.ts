@@ -10,6 +10,7 @@ import {
   toggleTodo as toggleTodoData,
   getCourseIdForTask,
 } from '@/lib/data';
+import { getStudentIdFromCookie } from '@/lib/session';
 import {
   suggestTasks,
   SuggestTasksOutput,
@@ -57,8 +58,41 @@ export async function toggleTaskCompletion(taskId: string, studentId: string) {
 
 export async function addTodo(text: string, studentId: string) {
   const newTodo = await addTodoData(text, studentId);
-  revalidatePath('/');
+  revalidatePath('/', 'layout');
   return newTodo;
+}
+
+// Bulk add AI-suggested todos (infers current student from cookie)
+export async function addSuggestedTodos(texts: string[]) : Promise<{ added: string[]; skipped: string[]; studentId?: string }> {
+  let studentId = await getStudentIdFromCookie();
+  // Fallback: if no session cookie set, default to first defined student to avoid silent no-op
+  if (!studentId) {
+    try {
+      const { getAllStudents } = await import('@/lib/data');
+      const all = await getAllStudents();
+      studentId = all[0]?.id;
+    } catch {}
+  }
+  if (!studentId) return { added: [], skipped: texts };
+  const seen = new Set<string>();
+  const added: string[] = [];
+  const skipped: string[] = [];
+  for (const raw of texts) {
+    const t = raw.trim().replace(/^["'`]+|["'`]+$/g, '');
+    if (!t || t.length < 3) { skipped.push(raw); continue; }
+    const key = t.toLowerCase();
+    if (seen.has(key)) { skipped.push(raw); continue; }
+    seen.add(key);
+    try {
+      await addTodoData(t, studentId);
+      added.push(t);
+    } catch (e) {
+      skipped.push(raw);
+    }
+    if (added.length >= 20) break; // safety cap
+  }
+  revalidatePath('/', 'layout');
+  return { added, skipped, studentId };
 }
 
 export async function toggleTodo(todoId: string, studentId: string) {

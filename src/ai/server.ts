@@ -1,6 +1,6 @@
 // server.ts
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
@@ -65,19 +65,19 @@ Tone:
 `;
 
 // ---- Health/debug helpers (optional) ----
-app.get("/health", (_req, res) => res.json({ ok: true }));
-app.post("/reset", (req, res) => {
+app.get("/health", (_req: Request, res: Response) => res.json({ ok: true }));
+app.post("/reset", (req: Request, res: Response) => {
   const uid = (req.body?.userId as string) ?? "global";
   memory.delete(uid);
   res.json({ ok: true, cleared: uid });
 });
-app.get("/history", (req, res) => {
+app.get("/history", (req: Request, res: Response) => {
   const uid = (req.query.userId as string) ?? "global";
   res.json({ userId: uid, history: memory.get(uid) ?? [] });
 });
 
 // ---- Chat endpoint ----
-app.post("/chat", async (req, res) => {
+app.post("/chat", async (req: Request, res: Response) => {
   try {
     const { message, userId } = (req.body ?? {}) as { message: string; userId?: string };
     if (!message) return res.status(400).json({ error: "Missing 'message'." });
