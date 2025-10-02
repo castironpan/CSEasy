@@ -12,8 +12,8 @@ const courseCatalog: Course[] = [
   {
     id: 'cs101',
     name: 'Introduction to Programming',
-    code: 'COMP1511',
-    instructor: 'Jake Renzella',
+    code: 'CS 101',
+    instructor: 'Dr. Alan Turing',
     websiteUrl: '#',
     grade: 85,
     progress: 0, // will be derived
@@ -25,12 +25,12 @@ const courseCatalog: Course[] = [
     totalAssignments: 6,
     totalExams: 2,
     labs: [
-      { id: 'lab-cs101-1', title: 'Lab 1: Setup', dueDate: futureDays(2) },
-      { id: 'lab-cs101-2', title: 'Lab 2: Introduction To C', dueDate: futureDays(6) },
+      { id: 'lab-cs101-1', title: 'Lab 1: Variables & IO', dueDate: futureDays(2) },
+      { id: 'lab-cs101-2', title: 'Lab 2: Conditionals', dueDate: futureDays(6) },
     ],
     assignments: [
-      { id: 'assg-cs101-1', title: 'Assignment 1: CS Ninja', dueDate: futureDays(4) },
-      { id: 'assg-cs101-2', title: 'Assignment 2: CS Eats', dueDate: futureDays(11) },
+      { id: 'assg-cs101-1', title: 'Assignment 1: Basic Python Functions', dueDate: futureDays(4) },
+      { id: 'assg-cs101-2', title: 'Assignment 2: Loops', dueDate: futureDays(11) },
     ],
     announcements: [
       { id: 'ann-cs101-1', courseId: 'cs101', title: 'Guest Lecture', content: 'AI Ethics talk next week.', date: pastDays(1) },
@@ -39,8 +39,8 @@ const courseCatalog: Course[] = [
   {
     id: 'ds202',
     name: 'Data Structures & Algorithms',
-    code: 'COMP2521',
-    instructor: 'Sim Mautner',
+    code: 'DS 202',
+    instructor: 'Dr. Ada Lovelace',
     websiteUrl: '#',
     grade: 91,
     progress: 0,
@@ -65,9 +65,9 @@ const courseCatalog: Course[] = [
   },
   {
     id: 'os301',
-    name: 'Software Engineering Fundamentals',
-    code: 'COMP1531',
-    instructor: 'Yuchao Jiang',
+    name: 'Operating Systems',
+    code: 'OS 301',
+    instructor: 'Dr. Linus Torvalds',
     websiteUrl: '#',
     grade: 78,
     progress: 0,
@@ -79,8 +79,8 @@ const courseCatalog: Course[] = [
     totalAssignments: 7,
     totalExams: 2,
     labs: [
-      { id: 'lab-os301-1', title: 'Lab 1: Using Typescript', dueDate: futureDays(1) },
-      { id: 'lab-os301-2', title: 'Lab 2: Introduction To JS', dueDate: pastDays(1) },
+      { id: 'lab-os301-1', title: 'Lab 1: Processes', dueDate: futureDays(1) },
+      { id: 'lab-os301-2', title: 'Lab 2: Shell Scripting', dueDate: pastDays(1) },
     ],
     assignments: [
       { id: 'assg-os301-1', title: 'Assignment 1: Scheduling', dueDate: futureDays(9) },
@@ -91,12 +91,20 @@ const courseCatalog: Course[] = [
   },
 ];
 
-// In-memory store for all student data.
-// In a real app, this would be a database.
-const __internalStudents: Record<string, Student> = {
+// Extended Student interface to include authentication credentials
+interface StudentWithAuth extends Student {
+  zId: string;
+  password: string; // In production, this would be a hashed password!
+}
+
+// In-memory store for all student data with authentication.
+// IMPORTANT: In production, passwords should be hashed using bcrypt or similar!
+const __internalStudents: Record<string, StudentWithAuth> = {
   'student-1': {
     id: 'student-1',
     name: 'Jane Doe',
+    zId: 'z5555555',
+    password: 'password123', // In production: hash this!
     enrolledCourseIds: ['cs101', 'ds202', 'os301'],
     todos: [
       { id: 'todo-1', text: 'Review DS202 lecture', completed: true },
@@ -120,6 +128,8 @@ const __internalStudents: Record<string, Student> = {
   'student-2': {
     id: 'student-2',
     name: 'John Smith',
+    zId: 'z1234567',
+    password: 'securepass456', // In production: hash this!
     enrolledCourseIds: ['cs101', 'ds202'],
     todos: [
       { id: 'todo-4', text: 'Buy new notebook', completed: true },
@@ -137,16 +147,41 @@ const __internalStudents: Record<string, Student> = {
   }
 };
 
+// Map zID to student ID for authentication lookups
+const __zIdToStudentId: Record<string, string> = {
+  'z5555555': 'student-1',
+  'z1234567': 'student-2',
+};
+
 /******************** Internal Helpers ********************/
+
+// Convert zID to student ID if needed
+function normalizeToStudentId(idOrZid?: string): string {
+  if (!idOrZid) return 'student-1';
+  
+  // Check if it's already a student ID
+  if (__internalStudents[idOrZid]) {
+    return idOrZid;
+  }
+  
+  // Check if it's a zID
+  const studentId = __zIdToStudentId[idOrZid];
+  if (studentId) {
+    return studentId;
+  }
+  
+  // Default fallback
+  return 'student-1';
+}
 
 // In a real app, this would resolve the current user from a session cookie.
 // For now, it's a placeholder that defaults to student-1.
 function resolveStudentId(studentId?: string): string {
-  return studentId || 'student-1';
+  return normalizeToStudentId(studentId);
 }
 
 // A helper to safely mutate student data, ensuring we don't leak references.
-function mutateStudent(studentId: string, mutator: (student: Student) => void) {
+function mutateStudent(studentId: string, mutator: (student: StudentWithAuth) => void) {
   const student = __internalStudents[studentId];
   if (!student) {
     throw new Error(`Student with id "${studentId}" not found.`);
@@ -157,8 +192,34 @@ function mutateStudent(studentId: string, mutator: (student: Student) => void) {
   __internalStudents[studentId] = studentCopy;
 }
 
+// Helper to strip sensitive data from student object
+function sanitizeStudent(student: StudentWithAuth): Student {
+  const { zId, password, ...sanitized } = student;
+  return sanitized as Student;
+}
+
+/******************** Authentication ********************/
+
+export const authenticateStudent = async (zId: string, password: string): Promise<{ success: boolean; studentId?: string; error?: string }> => {
+  // Find student by zID
+  const studentId = __zIdToStudentId[zId];
+  
+  if (!studentId) {
+    return { success: false, error: 'Invalid zID or password' };
+  }
+  
+  const student = __internalStudents[studentId];
+  
+  // In production, use bcrypt.compare() or similar to verify hashed password
+  if (student.password !== password) {
+    return { success: false, error: 'Invalid zID or password' };
+  }
+  
+  return { success: true, studentId: student.id };
+};
+
 /******************** Task Metadata Aggregation ********************/
-function buildTaskMetadataForStudent(stu: Student): TaskMetadata[] {
+function buildTaskMetadataForStudent(stu: StudentWithAuth): TaskMetadata[] {
   const meta: TaskMetadata[] = [];
   stu.enrolledCourseIds.forEach(cid => {
     const course = courseCatalog.find(c => c.id === cid);
@@ -169,7 +230,7 @@ function buildTaskMetadataForStudent(stu: Student): TaskMetadata[] {
   return meta;
 }
 
-function deriveStudentTasks(stu: Student): StudentTask[] {
+function deriveStudentTasks(stu: StudentWithAuth): StudentTask[] {
   return buildTaskMetadataForStudent(stu).map(m => ({
     ...m,
     completed: !!stu.taskStates[m.id]?.completed,
@@ -210,7 +271,11 @@ export function computeCourseProgressForStudent(course: Course, stuId: string): 
 
 export const getStudent = async (studentId?: string): Promise<Student> => {
   const id = resolveStudentId(studentId);
-  return structuredClone(__internalStudents[id]);
+  const student = __internalStudents[id];
+  if (!student) {
+    throw new Error(`Student with id "${id}" not found.`);
+  }
+  return sanitizeStudent(structuredClone(student));
 };
 
 export const getStudentCourses = async (studentId?: string): Promise<StudentCourseView[]> => {
@@ -264,8 +329,8 @@ export const getStudentTodos = async (studentId?: string): Promise<Todo[]> => {
   return structuredClone(__internalStudents[resolveStudentId(studentId)].todos);
 };
 
-export const getAllStudents = async (): Promise<{ id: string; name: string; }[]> => {
-  return Object.values(__internalStudents).map(s => ({ id: s.id, name: s.name }));
+export const getAllStudents = async (): Promise<{ id: string; name: string; zId: string; }[]> => {
+  return Object.values(__internalStudents).map(s => ({ id: s.id, name: s.name, zId: s.zId }));
 };
 
 /******************** Public API (Mutations) ********************/
