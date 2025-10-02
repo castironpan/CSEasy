@@ -11,8 +11,8 @@ function pastDays(n: number) { return new Date(Date.now() - n * 86400000).toISOS
 const courseCatalog: Course[] = [
   {
     id: 'cs101',
-    name: 'Introduction to Programming',
-    code: 'COMP1511',
+    name: 'Computer Systems Fundamentals',
+    code: 'COMP1521',
     instructor: 'Sasha Vassar',
     websiteUrl: '#',
     grade: 85,
@@ -25,12 +25,12 @@ const courseCatalog: Course[] = [
     totalAssignments: 6,
     totalExams: 2,
     labs: [
-      { id: 'lab-cs101-1', title: 'Lab 1: Introduction To C', dueDate: futureDays(2) },
-      { id: 'lab-cs101-2', title: 'Lab 2: Arrays', dueDate: futureDays(6) },
+      { id: 'lab-cs101-1', title: 'Lab 1: C Programming Basics', dueDate: futureDays(2) },
+      { id: 'lab-cs101-2', title: 'Lab 2: Pointers and Memory', dueDate: futureDays(6) },
     ],
     assignments: [
-      { id: 'assg-cs101-1', title: 'Assignment 1: CS Ninja', dueDate: futureDays(4) },
-      { id: 'assg-cs101-2', title: 'Assignment 2: CS Eat', dueDate: futureDays(11) },
+      { id: 'assg-cs101-1', title: 'Assignment 1: Flood: The Game', dueDate: futureDays(4) },
+      { id: 'assg-cs101-2', title: 'Assignment 2: System Calls and Memory Management', dueDate: futureDays(11) },
     ],
     announcements: [
       { id: 'ann-cs101-1', courseId: 'cs101', title: 'Guest Lecture', content: 'AI Ethics talk next week.', date: pastDays(1) },
@@ -52,12 +52,12 @@ const courseCatalog: Course[] = [
     totalAssignments: 8,
     totalExams: 2,
     labs: [
-      { id: 'lab-ds202-1', title: 'Lab 1: Using APIs', dueDate: futureDays(3) },
-      { id: 'lab-ds202-2', title: 'Lab 2: Linked Lists', dueDate: futureDays(7) },
+      { id: 'lab-ds202-1', title: 'Lab 1: Linked Lists', dueDate: futureDays(3) },
+      { id: 'lab-ds202-2', title: 'Lab 2: Stacks and Queues', dueDate: futureDays(7) },
     ],
     assignments: [
-      { id: 'assg-ds202-1', title: 'Assignment 1: Huffman Tree Encoder', dueDate: futureDays(5) },
-      { id: 'assg-ds202-2', title: 'Assignment 2: Maps & Navigation', dueDate: futureDays(12) },
+      { id: 'assg-ds202-1', title: 'Assignment 1: Huffman Encoder', dueDate: futureDays(5) },
+      { id: 'assg-ds202-2', title: 'Assignment 2: Balanced Trees', dueDate: futureDays(12) },
     ],
     announcements: [
       { id: 'ann-ds202-1', courseId: 'ds202', title: 'Midterm Grades Released', content: 'Check portal for grades.', date: pastDays(2) },
@@ -65,8 +65,8 @@ const courseCatalog: Course[] = [
   },
   {
     id: 'os301',
-    name: 'Software Engineering Fundamentals',
-    code: 'COMP1531',
+    name: 'Object-Oriented Design and Programming',
+    code: 'COMP2511',
     instructor: 'Yuchao Jiang',
     websiteUrl: '#',
     grade: 78,
@@ -79,11 +79,11 @@ const courseCatalog: Course[] = [
     totalAssignments: 7,
     totalExams: 2,
     labs: [
-      { id: 'lab-os301-1', title: 'Lab 1: Git', dueDate: futureDays(1) },
+      { id: 'lab-os301-1', title: 'Lab 1: Java Basics', dueDate: futureDays(1) },
       { id: 'lab-os301-2', title: 'Lab 2: Objects', dueDate: pastDays(1) },
     ],
     assignments: [
-      { id: 'assg-os301-1', title: 'Assignment 1: Group Work', dueDate: futureDays(9) },
+      { id: 'assg-os301-1', title: 'Assignment 1: Dungeon Mania', dueDate: futureDays(9) },
     ],
     announcements: [
       { id: 'ann-os301-1', courseId: 'os301', title: 'Office Hours Update', content: 'Friday hours canceled.', date: pastDays(3) },
