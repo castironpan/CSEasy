@@ -12,8 +12,8 @@ const courseCatalog: Course[] = [
   {
     id: 'cs101',
     name: 'Introduction to Programming',
-    code: 'CS 101',
-    instructor: 'Dr. Alan Turing',
+    code: 'COMP1511',
+    instructor: 'Sasha Vassar',
     websiteUrl: '#',
     grade: 85,
     progress: 0, // will be derived
@@ -25,12 +25,12 @@ const courseCatalog: Course[] = [
     totalAssignments: 6,
     totalExams: 2,
     labs: [
-      { id: 'lab-cs101-1', title: 'Lab 1: Variables & IO', dueDate: futureDays(2) },
-      { id: 'lab-cs101-2', title: 'Lab 2: Conditionals', dueDate: futureDays(6) },
+      { id: 'lab-cs101-1', title: 'Lab 1: Introduction To C', dueDate: futureDays(2) },
+      { id: 'lab-cs101-2', title: 'Lab 2: Arrays', dueDate: futureDays(6) },
     ],
     assignments: [
-      { id: 'assg-cs101-1', title: 'Assignment 1: Basic Python Functions', dueDate: futureDays(4) },
-      { id: 'assg-cs101-2', title: 'Assignment 2: Loops', dueDate: futureDays(11) },
+      { id: 'assg-cs101-1', title: 'Assignment 1: CS Ninja', dueDate: futureDays(4) },
+      { id: 'assg-cs101-2', title: 'Assignment 2: CS Eat', dueDate: futureDays(11) },
     ],
     announcements: [
       { id: 'ann-cs101-1', courseId: 'cs101', title: 'Guest Lecture', content: 'AI Ethics talk next week.', date: pastDays(1) },
@@ -39,8 +39,8 @@ const courseCatalog: Course[] = [
   {
     id: 'ds202',
     name: 'Data Structures & Algorithms',
-    code: 'DS 202',
-    instructor: 'Dr. Ada Lovelace',
+    code: 'COMP2521',
+    instructor: 'Kevin Luxa',
     websiteUrl: '#',
     grade: 91,
     progress: 0,
@@ -52,12 +52,12 @@ const courseCatalog: Course[] = [
     totalAssignments: 8,
     totalExams: 2,
     labs: [
-      { id: 'lab-ds202-1', title: 'Lab 1: Arrays & Lists', dueDate: futureDays(3) },
+      { id: 'lab-ds202-1', title: 'Lab 1: Using APIs', dueDate: futureDays(3) },
       { id: 'lab-ds202-2', title: 'Lab 2: Linked Lists', dueDate: futureDays(7) },
     ],
     assignments: [
-      { id: 'assg-ds202-1', title: 'Assignment 1: Complexity Analysis', dueDate: futureDays(5) },
-      { id: 'assg-ds202-2', title: 'Assignment 2: Trees', dueDate: futureDays(12) },
+      { id: 'assg-ds202-1', title: 'Assignment 1: Huffman Tree Encoder', dueDate: futureDays(5) },
+      { id: 'assg-ds202-2', title: 'Assignment 2: Maps & Navigation', dueDate: futureDays(12) },
     ],
     announcements: [
       { id: 'ann-ds202-1', courseId: 'ds202', title: 'Midterm Grades Released', content: 'Check portal for grades.', date: pastDays(2) },
@@ -65,9 +65,9 @@ const courseCatalog: Course[] = [
   },
   {
     id: 'os301',
-    name: 'Operating Systems',
-    code: 'OS 301',
-    instructor: 'Dr. Linus Torvalds',
+    name: 'Software Engineering Fundamentals',
+    code: 'COMP1531',
+    instructor: 'Yuchao Jiang',
     websiteUrl: '#',
     grade: 78,
     progress: 0,
@@ -79,11 +79,11 @@ const courseCatalog: Course[] = [
     totalAssignments: 7,
     totalExams: 2,
     labs: [
-      { id: 'lab-os301-1', title: 'Lab 1: Processes', dueDate: futureDays(1) },
-      { id: 'lab-os301-2', title: 'Lab 2: Shell Scripting', dueDate: pastDays(1) },
+      { id: 'lab-os301-1', title: 'Lab 1: Git', dueDate: futureDays(1) },
+      { id: 'lab-os301-2', title: 'Lab 2: Objects', dueDate: pastDays(1) },
     ],
     assignments: [
-      { id: 'assg-os301-1', title: 'Assignment 1: Scheduling', dueDate: futureDays(9) },
+      { id: 'assg-os301-1', title: 'Assignment 1: Group Work', dueDate: futureDays(9) },
     ],
     announcements: [
       { id: 'ann-os301-1', courseId: 'os301', title: 'Office Hours Update', content: 'Friday hours canceled.', date: pastDays(3) },
