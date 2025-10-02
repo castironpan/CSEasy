@@ -8,6 +8,7 @@ import {
   GraduationCap,
   PlusCircle,
   Link as LinkIcon,
+  Sparkles,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -24,6 +25,8 @@ import {
 import type { Course } from '@/lib/types';
 import { AddCourseDialog } from '../dashboard/add-course-dialog';
 import { useState } from 'react';
+import { AIChatPanel } from '@/components/ai/ai-chat-panel';
+import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
   courses: Course[];
@@ -31,6 +34,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ courses }: AppSidebarProps) {
   const [isAddCourseOpen, setAddCourseOpen] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   return (
     <>
       <Sidebar
@@ -53,13 +57,15 @@ export function AppSidebar({ courses }: AppSidebarProps) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/" tooltip="Dashboard" isActive>
-                <Home />
-                <span>Dashboard</span>
+              <SidebarMenuButton asChild tooltip="Dashboard" isActive>
+                <Link href="/" className="flex items-center gap-2">
+                  <Home />
+                  <span>Dashboard</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="#" tooltip="Calendar">
+              <SidebarMenuButton tooltip="Calendar">
                 <Calendar />
                 <span>Calendar</span>
               </SidebarMenuButton>
@@ -77,13 +83,11 @@ export function AppSidebar({ courses }: AppSidebarProps) {
             <SidebarMenu>
               {courses.map((course) => (
                 <SidebarMenuItem key={course.id}>
-                  <SidebarMenuButton
-                    href="#"
-                    size="sm"
-                    tooltip={course.name}
-                  >
-                    <BookOpen />
-                    <span>{course.name}</span>
+                  <SidebarMenuButton size="sm" tooltip={course.name} asChild>
+                    <Link href={`/courses/${course.id}`} className="flex items-center gap-2">
+                      <BookOpen />
+                      <span>{course.name}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -103,21 +107,26 @@ export function AppSidebar({ courses }: AppSidebarProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                href="#"
-                tooltip="Course Websites"
-                className="justify-center"
-              >
+              <SidebarMenuButton tooltip="Course Websites" className="justify-center">
                 <LinkIcon />
-                <span className="group-data-[collapsible=icon]:hidden">
-                  Course Websites
-                </span>
+                <span className="group-data-[collapsible=icon]:hidden">Course Websites</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="AI Assistant" className="justify-center" onClick={() => setShowAI(v => !v)}>
+                <Sparkles />
+                <span className="group-data-[collapsible=icon]:hidden">AI Assistant</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <AddCourseDialog open={isAddCourseOpen} onOpenChange={setAddCourseOpen} />
+      {showAI && (
+        <div className={cn('fixed left-[var(--sidebar-width)] top-0 h-svh w-80 bg-background border-l z-40 shadow-lg animate-in slide-in-from-left', 'group-data-[collapsible=icon]:left-[var(--sidebar-width-icon)]')}>
+          <AIChatPanel onClose={() => setShowAI(false)} />
+        </div>
+      )}
     </>
   );
 }

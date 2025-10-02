@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import type { Todo } from '@/lib/types';
 import {
   Card,
@@ -112,6 +112,35 @@ export function AITodoList({ initialTodos, studentId }: AITodoListProps) {
       }
     });
   };
+
+  // Listen for external AI task additions dispatched from other components (e.g., AIChatPanel)
+  useEffect(() => {
+    function handleExternalAdd(e: Event) {
+      const ce = e as CustomEvent<{ tasks: string[] }>; // expected shape
+      const taskList = ce.detail?.tasks || [];
+      if (!Array.isArray(taskList) || !taskList.length) return;
+      startTransition(async () => {
+        for (const raw of taskList) {
+          const text = (raw || '').trim();
+          if (!text) continue;
+            // Prevent duplicates by case-insensitive text match
+          if (todos.some(t => t.text.toLowerCase() === text.toLowerCase())) continue;
+          try {
+            const created = await addTodoAction(text, studentId);
+            if (created) {
+              setTodos(prev => [...prev, created]);
+            }
+          } catch (err) {
+            toast({ variant: 'destructive', title: 'Failed to add task', description: text });
+          }
+        }
+      });
+    }
+    window.addEventListener('ai-add-tasks', handleExternalAdd as EventListener);
+    return () => window.removeEventListener('ai-add-tasks', handleExternalAdd as EventListener);
+    // We purposely exclude `todos` from deps to avoid re-binding listener; using latest via closure is acceptable for basic dedupe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId]);
 
   return (
     <>
