@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { login } from '@/app/actions'; // We will create this action next
+import { login } from '@/app/actions';
 
 export function LoginCard() {
   const router = useRouter();
@@ -15,24 +15,24 @@ export function LoginCard() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!zId || !password) {
-      setError("Please enter both zID and password");
+      setError('Please enter both zID and password');
       return;
     }
-    
+
     startTransition(async () => {
       const result = await login(zId, password);
-      if (result && result.error) {
-        setError(result.error);
-      } else if (!result) {
-        // Handle case where login returns null/undefined (success)
+
+      if (result?.error) {
+        setError(result.error); // show error from authenticateStudent
+      } else if (result?.success) {
         router.push('/');
       } else {
-        router.push('/');
+        setError('Unexpected error, please try again.');
       }
     });
   };
@@ -70,11 +70,7 @@ export function LoginCard() {
               required
             />
           </div>
-          {error && (
-            <div className="text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-sm text-red-600">{error}</div>}
         </CardContent>
         <CardFooter>
           <Button className="w-full" type="submit" disabled={isPending}>
