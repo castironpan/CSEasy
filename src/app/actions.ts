@@ -1,8 +1,16 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { setStudentIdCookie, deleteStudentIdCookie, getStudentIdFromCookie } from '@/lib/session';
-import { getStudent, toggleStudentTask as toggleTaskData, addTodo as addTodoData, toggleTodo as toggleTodoData, getCourseIdForTask } from '@/lib/data';
+import { setStudentIdCookie, deleteStudentIdCookie } from '@/lib/session';
+import {
+  authenticateStudent,
+  getStudent,
+  toggleStudentTask as toggleTaskData,
+  addTodo as addTodoData,
+  toggleTodo as toggleTodoData,
+  getCourseIdForTask,
+} from '@/lib/data';
+import { getStudentIdFromCookie } from '@/lib/session';
 import {
   suggestTasks,
   SuggestTasksOutput,
@@ -12,16 +20,19 @@ import {
   EstimateTaskCompletionTimeOutput,
 } from "@/ai/flows/estimate-task-completion-time";
 
-export async function login(studentId: string): Promise<{ error: string } | null> {
+/******************** Authentication ********************/
+export async function login(zId: string, password: string): Promise<{ success?: boolean; error?: string }> {
   try {
-    // Check if student exists
-    const student = await getStudent(studentId);
-    if (!student) {
-      return { error: 'Invalid student ID' };
+    const result = await authenticateStudent(zId, password);
+
+    if (!result.success) {
+      return { error: result.error || 'Invalid zID or password' };
     }
-  await setStudentIdCookie(studentId);
+
+    await setStudentIdCookie(result.studentId!);
     revalidatePath('/', 'layout'); // Revalidate all pages
-    return null;
+
+    return { success: true };
   } catch (e) {
     const error = e as Error;
     console.error('Login failed:', error);
@@ -34,9 +45,10 @@ export async function logout() {
   revalidatePath('/', 'layout');
 }
 
+/******************** Task & Todo Actions ********************/
 export async function toggleTaskCompletion(taskId: string, studentId: string) {
   await toggleTaskData(taskId, studentId);
-  // Revalidate dashboard (layout) so initial server-provided props refresh
+  // Revalidate dashboard (layout) so server-provided props refresh
   revalidatePath('/', 'layout');
   const courseId = getCourseIdForTask(taskId);
   if (courseId) {
@@ -84,10 +96,11 @@ export async function addSuggestedTodos(texts: string[]) : Promise<{ added: stri
 }
 
 export async function toggleTodo(todoId: string, studentId: string) {
-    await toggleTodoData(todoId, studentId);
-    revalidatePath('/');
+  await toggleTodoData(todoId, studentId);
+  revalidatePath('/');
 }
 
+/******************** AI Actions ********************/
 export async function getAiTaskSuggestions(
   courseContent: string
 ): Promise<SuggestTasksOutput | null> {

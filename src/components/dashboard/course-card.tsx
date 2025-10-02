@@ -11,6 +11,14 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course }: CourseCardProps) {
+  const courseLinks: Record<string, string> = {
+    COMP1521: "https://cgi.cse.unsw.edu.au/~cs1521/25T3/",
+    COMP2521: "https://webcms3.cse.unsw.edu.au/COMP2521/25T3/",
+    COMP2511: "https://cgi.cse.unsw.edu.au/~cs2511/25T3/",
+  };
+
+  const websiteUrl = courseLinks[course.code] || course.websiteUrl || "#";
+  
   return (
     <Link
       href={`/courses/${course.id}`}
@@ -65,7 +73,7 @@ export function CourseCard({ course }: CourseCardProps) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                window.open(course.websiteUrl, '_blank', 'noopener');
+                window.open(websiteUrl, '_blank', 'noopener');
               }}
               className="text-xs font-medium hover:underline"
               style={{ color: course.color }}
