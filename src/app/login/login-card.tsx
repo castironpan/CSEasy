@@ -1,39 +1,36 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { login } from '@/app/actions'; // We will create this action next
 
-interface Student {
-  id: string;
-  name: string;
-}
-
-interface LoginCardProps {
-  students: Student[];
-}
-
-export function LoginCard({ students }: LoginCardProps) {
+export function LoginCard() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  let selectedStudentId: string = students[0]?.id ?? '';
+  const [zId, setZId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = async () => {
-    if (!selectedStudentId) {
-      // In a real app, show an error message
-      console.error("No student selected");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!zId || !password) {
+      setError("Please enter both zID and password");
       return;
     }
     
     startTransition(async () => {
-      const error = await login(selectedStudentId);
-      if (error) {
-        // In a real app, show an error toast
-        console.error(error);
+      const result = await login(zId, password);
+      if (result && result.error) {
+        setError(result.error);
+      } else if (!result) {
+        // Handle case where login returns null/undefined (success)
+        router.push('/');
       } else {
         router.push('/');
       }
@@ -45,31 +42,46 @@ export function LoginCard({ students }: LoginCardProps) {
       <CardHeader>
         <CardTitle className="text-2xl">Login</CardTitle>
         <CardDescription>
-          Select a student profile to view the dashboard.
+          Enter your zID and password to access your dashboard.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="student">Student</Label>
-          <Select defaultValue={selectedStudentId ?? undefined} onValueChange={(value) => { selectedStudentId = value; }}>
-            <SelectTrigger id="student">
-              <SelectValue placeholder="Select a student" />
-            </SelectTrigger>
-            <SelectContent>
-              {students.map((student) => (
-                <SelectItem key={student.id} value={student.id}>
-                  {student.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button className="w-full" onClick={handleLogin} disabled={isPending}>
-          {isPending ? 'Logging in...' : 'Login'}
-        </Button>
-      </CardFooter>
+      <form onSubmit={handleLogin}>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="zid">zID</Label>
+            <Input
+              id="zid"
+              type="text"
+              placeholder="z1234567"
+              value={zId}
+              onChange={(e) => setZId(e.target.value)}
+              disabled={isPending}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isPending}
+              required
+            />
+          </div>
+          {error && (
+            <div className="text-sm text-red-600">
+              {error}
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button className="w-full" type="submit" disabled={isPending}>
+            {isPending ? 'Logging in...' : 'Login'}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 }
